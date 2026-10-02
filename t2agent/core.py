@@ -5,8 +5,8 @@ import pandas as pd
 N_DRAWS = 500
 WINDOW = 300
 PARAMS = dict(k=0.5, c=0.7, ct=1.2)
-FAMILY_PARAMS = {'F1': dict(k=0.5, c=0.6, ct=1.0), 'F2': dict(k=0.5, c=0.7, ct=1.2),
-                 'F3': dict(k=0.5, c=0.8, ct=1.0), 'F4': dict(k=0.75, c=0.7, ct=1.2)}
+FAMILY_PARAMS = {'F1': dict(k=0.5, c=0.6, ct=1.0), 'F2': dict(k=0.75, c=0.85, ct=1.3),
+                 'F3': dict(k=0.5, c=0.8, ct=1.0), 'F4': dict(k=1.0, c=1.15, ct=1.7)}
 VOL_BETA, VOL_CLIP = 0.25, (0.7, 1.4)
 
 
@@ -135,7 +135,7 @@ def vol_ratio(p):
     return np.clip(np.array(out) ** VOL_BETA, *VOL_CLIP)
 
 
-def transform(p, k, c, ct, vol=False):
+def transform(p, k, c, ct, vol=False, adj=None):
     base = p['base']
     sd = base.std(0, keepdims=True)
     sd = np.where(sd > 0, sd, 1.0)
@@ -144,7 +144,12 @@ def transform(p, k, c, ct, vol=False):
     zt = np.sign(z) * (c * np.minimum(a, 1) + ct * np.maximum(a - 1, 0))
     if vol:
         zt = zt * vol_ratio(p)[None, :]
-    X = p['anchor'] + k * p['drift'] + sd * zt
+    center = p['anchor'] + k * p['drift']
+    if adj is not None:
+        shift, width = adj
+        zt = zt * width[None, :]
+        center = center + shift
+    X = center + sd * zt
     if X.shape[1] == 2:
         m0 = p['anchor'] + p['drift'] + base
         X = m0 + (X[:, :1] - m0[:, :1])
