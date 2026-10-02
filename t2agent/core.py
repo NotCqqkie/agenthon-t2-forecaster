@@ -1,4 +1,5 @@
 import json, pathlib, tomllib, zlib
+from . import v9 as V9
 import numpy as np
 import pandas as pd
 
@@ -282,6 +283,23 @@ def params_for(card, panels_used):
     return dict(PARAMS, vol=True)
 
 
+def v9_card(p, fam, panels, asof):
+    feats = []
+    for f in cell_feats(p):
+        feats.append(f if f is not None else dict(v20=0.0, v60=0.0, v300=0.0, r60=0.0))
+    rates = []
+    for _, df in panels:
+        sub = df[df['asset'].str.upper().str.startswith('UST') & (df['date'] <= asof)]
+        if len(sub):
+            rates.append(sub)
+    R = None
+    if rates:
+        R = pd.concat(rates).drop_duplicates(['date', 'asset'], keep='first').pivot(index='date', columns='asset', values='value').sort_index()
+    return dict(fam=fam, ttype=p['ttype'], asof=asof, cells=[(str(a), int(h)) for a, h in p['cells']],
+                anchor=np.asarray(p['anchor'], float), drift=np.asarray(p['drift'], float), base=p['base'],
+                hs=np.array([h for _, h in p['cells']], float), feat=feats, H=p['hist'], rates=R)
+
+
 def forecast(card, spec, panels, asof, unit_id):
     p = m0_parts(card, spec, panels, asof, unit_id)
     used = set()
@@ -291,7 +309,11 @@ def forecast(card, spec, panels, asof, unit_id):
                 used.add(name)
                 break
     prm = params_for(card, used)
-    X = transform_v8(p, **prm) if 'fam' in prm else transform(p, **prm)
+    if 'fam' in prm and prm['fam'] in V9.P:
+        prm = dict(prm, version='v9')
+        X = V9.transform_card(v9_card(p, prm['fam'], panels, asof))
+    else:
+        X = transform_v8(p, **prm) if 'fam' in prm else transform(p, **prm)
     if not np.isfinite(X).all():
         raise ValueError('non-finite draws')
     return p, X, prm

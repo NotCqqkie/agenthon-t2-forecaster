@@ -55,3 +55,14 @@ Scoring for selection: the track composite (CRPS, variogram p=0.5, pinball 1/5/9
 the rebuilt baseline per card, averaged. Grids over k ∈ {0…1.25}, c ∈ {0.4…1.3}, ct ∈ {0.8…2.8},
 checked by a pre-2013 / post-2013 split, and the v8 additions also on a separate held-out synthetic set (different
 random as-of dates). No unit's realized value is stored in the image.
+
+## v9 additions (2026-10-02)
+
+Per-family constants and components are listed in `t2agent/v9.py` (constants `P`, pipeline in the module docstring
+of the source candidate). Beyond v8: refined Treasury reversal (gain, cap, tenor gradient, horizon exponent for F4),
+a tail made heavier on the side the reversal moves the centre, a tail lean toward the 1500-step mean (F1), regime terms
+from long-run (1500-step) vs 300-step volatility and residual trend strength, a centre lean on Treasury cells from the
+standardized 500/750-step UST_10Y change and pooled rates-panel volatility ratio (computed only from the unit's own
+rates panel up to the as-of date), and a soft lower bound for yield levels. Selected by greedy forward selection on the
+synthetic dev sets (both eras required to improve; real practice cards not worse by more than 0.003), then confirmed on
+two separate held-out synthetic sets drawn at different random as-of dates.
