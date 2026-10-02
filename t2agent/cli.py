@@ -15,6 +15,9 @@ def rationale(unit_id, asof, p, prm, n_docs, note):
              f'3. Shape: standardized draws are reshaped piecewise-linearly, slope {prm["c"]} inside one sd and '
              f'{prm["ct"]} beyond it (h-day financial changes are leptokurtic: peaked body, fat tails)'
              + ('; width scaled by (20-day vol / 300-day vol)^0.25.' if prm.get('vol') else '.'),
+             '5. Tail/shock (F4) cards: for equity-factor and currency targets the risk-off tail is 30% heavier, the '
+             'opposite tail 30% lighter, and the centre leans 0.25 sd toward risk-off (crashes exceed rallies).'
+             if prm.get('skew') else '5. No directional skew on this card family.',
              '4. Parameters were chosen on pre-as-of historical backtests only; no unit-specific values are stored.',
              '', '## Ledger', '', '| asset | horizon | anchor | drift used | panel steps |', '|---|---|---|---|---|']
     if p is not None:

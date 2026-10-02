@@ -15,7 +15,9 @@ Per unit, using only that unit's own `/input` files:
 2. Shrink the drift by `k`, reshape the standardized draws piecewise-linearly (slope `c` within one sd,
    `ct` beyond), scale width by `clip((20-step sd / 300-step sd)^0.25, 0.7, 1.4)`.
 3. On two-cell cards, keep each draw's cell difference equal to the baseline's.
-4. Monthly-macro and EM-transfer cards use step 1 unchanged.
+4. Tail/shock (F4) cards, equity-factor and currency targets only: risk-off tail slope ×1.3, opposite tail ×0.7,
+   centre shifted 0.25 sd toward risk-off (fixed sign table per asset; rates are left symmetric).
+5. Monthly-macro and EM-transfer cards use step 1 unchanged.
 
 ## Constants and the data used to choose them
 
@@ -26,6 +28,7 @@ Per unit, using only that unit's own `/input` files:
 | k, c, ct for F3 | 0.25, 0.9, 1.3 | backtests below |
 | k, c, ct for F4 | 0.75, 1.6, 1.7 | backtests below |
 | vol exponent / clip | 0.25 / [0.7, 1.4] | backtests below |
+| F4 risk-off tail asymmetry / centre shift | 0.3 / 0.25 sd | backtests below |
 
 Selection data, all public and dated 2000-01-03 … 2024-12-18 (before every Final-window cutoff):
 

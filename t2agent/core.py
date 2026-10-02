@@ -8,6 +8,9 @@ PARAMS = dict(k=0.5, c=0.7, ct=1.2)
 FAMILY_PARAMS = {'F1': dict(k=0.75, c=0.5, ct=1.0), 'F2': dict(k=0.5, c=1.0, ct=1.3),
                  'F3': dict(k=0.25, c=0.9, ct=1.3), 'F4': dict(k=0.75, c=1.6, ct=1.7)}
 VOL_BETA, VOL_CLIP = 0.25, (0.7, 1.4)
+RISK_OFF = {'MKT': -1, 'SMB': -1, 'QMJ': 1, 'AUD': -1, 'NZD': -1, 'EUR': -1, 'GBP': -1, 'CAD': 1, 'NOK': 1,
+            'SEK': 1, 'DKK': 1, 'JPY': -1, 'CHF': -1}
+F4_SKEW = (0.3, 0.25)
 
 
 def find_card(panels_dir):
@@ -138,15 +141,19 @@ def vol_ratio(p):
     return np.clip(np.array(out) ** VOL_BETA, *VOL_CLIP)
 
 
-def transform(p, k, c, ct, vol=False, adj=None):
+def transform(p, k, c, ct, vol=False, adj=None, skew=None):
     base = p['base']
     sd = base.std(0, keepdims=True)
     sd = np.where(sd > 0, sd, 1.0)
     z = base / sd
     a = np.abs(z)
-    zt = np.sign(z) * (c * np.minimum(a, 1) + ct * np.maximum(a - 1, 0))
+    ro = np.array([RISK_OFF.get(str(x).upper(), 0) for x, _ in p['cells']], float)[None, :]
+    ctt = ct * (1 + skew[0] * np.sign(z) * ro) if skew else ct
+    zt = np.sign(z) * (c * np.minimum(a, 1) + ctt * np.maximum(a - 1, 0))
     if vol:
         zt = zt * vol_ratio(p)[None, :]
+    if skew:
+        zt = zt + skew[1] * ro
     center = p['anchor'] + k * p['drift']
     if adj is not None:
         shift, width = adj
@@ -163,7 +170,7 @@ def params_for(card, panels_used):
     if any('macro' in n or 'em_' in n or 'transfer' in n for n in panels_used):
         return dict(k=1.0, c=1.0, ct=1.0)
     fam = str(card.get('metadata', {}).get('category', ''))[-2:]
-    return dict(FAMILY_PARAMS.get(fam, PARAMS), vol=True)
+    return dict(FAMILY_PARAMS.get(fam, PARAMS), vol=True, skew=F4_SKEW if fam == 'F4' else None)
 
 
 def forecast(card, spec, panels, asof, unit_id):
