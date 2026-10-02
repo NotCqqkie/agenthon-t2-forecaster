@@ -27,3 +27,43 @@ jobs:
           sbom: false
           tags: ghcr.io/notcqqkie/agenthon-t2-forecaster:${{ github.sha }}
       - run: echo "digest=${{ steps.build.outputs.digest }}" | tee -a $GITHUB_STEP_SUMMARY
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+  verify:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: Agenthon-2026/track2-forecasting-public
+          path: t2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - run: |
+          pip install -q "qfbench2-common @ git+https://github.com/Agenthon-2026/Agenthon2026-public.git@v2.5.1#subdirectory=common"
+          pip install -q -e t2
+      - name: run image on sample units (platform settings) and gate
+        env:
+          IMG: ghcr.io/notcqqkie/agenthon-t2-forecaster@${{ needs.build.outputs.digest }}
+        run: |
+          set -e
+          docker pull -q $IMG
+          mkdir -p outs
+          for id in t2-F1-pause-2006 t2-F1-qe3-end-2014 t2-F2-cnh-stress-2015 t2-F2-powell-pivot-2019 t2-F3-dollar-squeeze-2020 t2-F3-rates-into-factors-2022 t2-F4-covid-mkt-2020 t2-F4-jpy-carry-2007 t2-F4-funding-stress-2y-2008 t2-F1-cpi-glidepath-2023; do
+            st=stage/$id; mkdir -p $st/panels outs/$id; cp t2/units/$id/*.toml t2/units/$id/*.json t2/units/$id/*.md $st/ 2>/dev/null || true
+            cp -r t2/units/$id/text $st/ 2>/dev/null || true; cp t2/units/$id/*.parquet $st/panels/; chmod 777 outs/$id
+            asof=$(python -c "import tomllib;print(tomllib.load(open('$st/card.toml','rb'))['provenance']['data_cutoff'])")
+            docker run --rm --read-only --user 65534:65534 --cap-drop=ALL --security-opt no-new-privileges \
+              --tmpfs /tmp:rw,noexec,nosuid,nodev,size=64m --pids-limit 256 --ulimit nofile=1024:1024 --ulimit nproc=256:256 \
+              --cpus 2 --memory 4g --memory-swap 4g --network=none -v "$PWD/$st":/input:ro -v "$PWD/outs/$id":/output \
+              -e QFBENCH_SEED=0 -e QFBENCH_NETWORK=none $IMG forecast --panels /input/panels/ --text /input/text/ --asof $asof --out /output/forecast.parquet
+            PYTHONPATH=t2 qfbench2-smoke t2/units/$id outs/$id --track forecasting | tee -a smoke.txt
+          done
+          ! grep -q "admissible=False" smoke.txt
+      - uses: actions/upload-artifact@v4
+        with:
+          name: verify-outputs
+          path: |
+            outs
+            smoke.txt
