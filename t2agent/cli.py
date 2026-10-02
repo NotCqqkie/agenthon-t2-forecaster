@@ -45,7 +45,7 @@ def main(argv=None):
         except Exception:
             spec = None
     unit_id = str(card.get('task', {}).get('id') or card_path.parent.name)
-    asof = pd.Timestamp(a.asof)
+    asof = pd.Timestamp(str(a.asof)[:10])
     panels = core.read_panels(a.panels)
     t = card['targets']
     note, p, prm = '', None, dict(k=1.0, c=1.0, ct=1.0)

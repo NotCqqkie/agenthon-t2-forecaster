@@ -38,7 +38,9 @@ def history(panels, asset, asof):
     for _, df in panels:
         sub = df[df['asset'] == asset]
         if len(sub):
-            sub = sub[sub['date'] <= asof].dropna(subset=['date']).sort_values('date')
+            sub = sub[sub['date'] <= asof].dropna(subset=['date']).sort_values('date', kind='stable')
+            sub = sub.drop_duplicates('date', keep='last')
+            sub = sub[np.isfinite(pd.to_numeric(sub['value'], errors='coerce'))]
             return pd.Series(sub['value'].astype(float).to_numpy(), index=pd.DatetimeIndex(sub['date']))
     raise KeyError(f'asset {asset} not in panels')
 
@@ -79,7 +81,8 @@ def target_dates(card, spec, asof, cells):
     """Per-cell target date if the card/spec names one; monthly periods map to month start."""
     out = {}
     t = card.get('targets', {})
-    st = (spec or {}).get('targets', {}) if isinstance(spec, dict) else {}
+    st = spec.get('targets', {}) if isinstance(spec, dict) else {}
+    st = st if isinstance(st, dict) else {}
     hs = list(t.get('horizons', []))
     for src in (t, st):
         for key in ('target_dates', 'observation_periods'):
