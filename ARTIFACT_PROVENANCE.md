@@ -17,7 +17,15 @@ Per unit, using only that unit's own `/input` files:
 3. On two-cell cards, keep each draw's cell difference equal to the baseline's.
 4. Tail/shock (F4) cards, equity-factor and currency targets only: risk-off tail slope ×1.3, opposite tail ×0.7,
    centre shifted 0.25 sd toward risk-off (fixed sign table per asset; rates are left symmetric).
-5. Monthly-macro and EM-transfer cards use step 1 unchanged.
+5. US Treasury level targets: the shrunk drift is reduced by g·(21/h)^0.5·h·(m[300,600) + 0.5·m[600,900)), the mean
+   per-step change 300-600 and 600-900 steps before the as-of date (g = 0.75/1.0/1.0/1.25 for F1-F4, capped at 1.5
+   horizon sd; skipped with < 900 steps of history).
+6. Centre lean along the sign of the baseline drift, size (a + b·x)·sd with x the standardized log ratio of recent
+   (20/60-step) to 300-step volatility; F4 inner width × exp(0.106·x_trend) (trend strength |r60|/(sd300·√60)).
+7. F1 one-asset two-horizon cards: both horizons reshaped, the horizon gap rescaled so mean |gap|^0.5 equals the
+   baseline's (variogram-neutral). F3 equity-factor return cards: cross-asset dispersion matched to the baseline's
+   pairwise |difference|^0.5 means.
+8. Monthly-macro and EM-transfer cards use step 1 unchanged.
 
 ## Constants and the data used to choose them
 
@@ -45,4 +53,5 @@ Selection data, all public and dated 2000-01-03 … 2024-12-18 (before every Fin
 
 Scoring for selection: the track composite (CRPS, variogram p=0.5, pinball 1/5/95/99%) divided by
 the rebuilt baseline per card, averaged. Grids over k ∈ {0…1.25}, c ∈ {0.4…1.3}, ct ∈ {0.8…2.8},
-checked by a pre-2013 / post-2013 split. No unit's realized value is stored in the image.
+checked by a pre-2013 / post-2013 split, and the v8 additions also on a separate held-out synthetic set (different
+random as-of dates). No unit's realized value is stored in the image.

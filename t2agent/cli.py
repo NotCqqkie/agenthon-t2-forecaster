@@ -11,13 +11,13 @@ def rationale(unit_id, asof, p, prm, n_docs, note):
              '1. Statistical backbone: joint Gaussian random walk on the trailing 300 panel steps '
              '(level changes, or per-step returns for log-return targets), steps spanning data holes dropped, '
              'assets aligned by date, cross-horizon path covariance min(s, s\') * Sigma.',
-             f'2. Drift: the trailing-window mean step is shrunk by k = {prm["k"]} (trend extrapolation is noisy).',
+             f'2. Drift: the trailing-window mean step is shrunk by k = {prm["k"]}; for US Treasury yields the drift is '
+             'reduced by part of the trend from 300-900 steps earlier (yields partly reverse multi-year trends).',
              f'3. Shape: standardized draws are reshaped piecewise-linearly, slope {prm["c"]} inside one sd and '
-             f'{prm["ct"]} beyond it (h-day financial changes are leptokurtic: peaked body, fat tails)'
-             + ('; width scaled by (20-day vol / 300-day vol)^0.25.' if prm.get('vol') else '.'),
-             '5. Tail/shock (F4) cards: for equity-factor and currency targets the risk-off tail is 30% heavier, the '
-             'opposite tail 30% lighter, and the centre leans 0.25 sd toward risk-off (crashes exceed rallies).'
-             if prm.get('skew') else '5. No directional skew on this card family.',
+             f'{prm["ct"]} beyond it (h-day financial changes are leptokurtic); width scaled by recent vs 300-step volatility.',
+             '   The centre leans slightly along the trailing drift, more when recent volatility is elevated.',
+             '   Tail/shock (F4) cards: equity-factor and currency targets get a heavier risk-off tail and a 0.25 sd risk-off lean.'
+             if prm.get('skew') else '   No directional risk-off skew on this card family.',
              '4. Parameters were chosen on pre-as-of historical backtests only; no unit-specific values are stored.',
              '', '## Ledger', '', '| asset | horizon | anchor | drift used | panel steps |', '|---|---|---|---|---|']
     if p is not None:
