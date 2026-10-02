@@ -23,10 +23,10 @@ Per unit, using only that unit's own `/input` files:
 
 | Constant | Value | Selected on |
 |---|---|---|
-| k, c, ct for F1 | 0.75, 0.5, 1.0 | backtests below |
+| k, c, ct (far-tail slope beyond 2 sd) for F1 | 0.625, 0.5, 1.0 (1.15) | backtests below |
 | k, c, ct for F2 | 0.5, 1.0, 1.3 | backtests below |
 | k, c, ct for F3 | 0.375, 0.9, 1.3 | backtests below |
-| k, c, ct for F4 | 0.75, 1.6, 1.7 | backtests below |
+| k, c, ct for F4 | 0.625, 1.6, 1.7 (vol exponent 0.5) | backtests below |
 | vol exponent / clip | 0.25 / [0.7, 1.4] | backtests below |
 | F4 risk-off tail asymmetry / centre shift | 0.3 / 0.25 sd | backtests below |
 
@@ -40,6 +40,8 @@ Selection data, all public and dated 2000-01-03 … 2024-12-18 (before every Fin
 - Per family, synthetic cards were importance-weighted so that the distribution of their realized
   surprise (|realized - baseline mean| / baseline sd) matches that family's practice cards; constants
   minimise the weighted mean score. Extra F2/F4 synthetic cards: 200 random dates per template.
+- A second weighting also matches each family's share of outcomes moving with vs against the baseline drift;
+  changes were accepted only if they improved both the pre-2013 and post-2013 halves.
 
 Scoring for selection: the track composite (CRPS, variogram p=0.5, pinball 1/5/95/99%) divided by
 the rebuilt baseline per card, averaged. Grids over k ∈ {0…1.25}, c ∈ {0.4…1.3}, ct ∈ {0.8…2.8},

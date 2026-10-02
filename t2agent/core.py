@@ -5,8 +5,8 @@ import pandas as pd
 N_DRAWS = 500
 WINDOW = 300
 PARAMS = dict(k=0.5, c=0.7, ct=1.2)
-FAMILY_PARAMS = {'F1': dict(k=0.75, c=0.5, ct=1.0), 'F2': dict(k=0.5, c=1.0, ct=1.3),
-                 'F3': dict(k=0.375, c=0.9, ct=1.3), 'F4': dict(k=0.75, c=1.6, ct=1.7)}
+FAMILY_PARAMS = {'F1': dict(k=0.625, c=0.5, ct=1.0, ct2=1.15), 'F2': dict(k=0.5, c=1.0, ct=1.3),
+                 'F3': dict(k=0.375, c=0.9, ct=1.3), 'F4': dict(k=0.625, c=1.6, ct=1.7, beta=0.5)}
 VOL_BETA, VOL_CLIP = 0.25, (0.7, 1.4)
 RISK_OFF = {'MKT': -1, 'SMB': -1, 'QMJ': 1, 'AUD': -1, 'NZD': -1, 'EUR': -1, 'GBP': -1, 'CAD': 1, 'NOK': 1,
             'SEK': 1, 'DKK': 1, 'JPY': -1, 'CHF': -1}
@@ -130,7 +130,7 @@ def m0_parts(card, spec, panels, asof, unit_id):
                 mu=mu, Sig=Sig, assets=assets, n_rows=len(frame), hist=hist)
 
 
-def vol_ratio(p):
+def vol_ratio(p, beta=None):
     out = []
     for a, _ in p['cells']:
         s = p['hist'][a].to_numpy()
@@ -138,20 +138,21 @@ def vol_ratio(p):
         st = st[np.isfinite(st)]
         v20, v300 = (st[-20:].std(), st[-300:].std()) if len(st) >= 40 else (1.0, 1.0)
         out.append(v20 / v300 if v300 > 0 and np.isfinite(v20 / v300) else 1.0)
-    return np.clip(np.array(out) ** VOL_BETA, *VOL_CLIP)
+    return np.clip(np.array(out) ** (VOL_BETA if beta is None else beta), *VOL_CLIP)
 
 
-def transform(p, k, c, ct, vol=False, adj=None, skew=None):
+def transform(p, k, c, ct, vol=False, adj=None, skew=None, ct2=None, beta=None):
     base = p['base']
     sd = base.std(0, keepdims=True)
     sd = np.where(sd > 0, sd, 1.0)
     z = base / sd
     a = np.abs(z)
     ro = np.array([RISK_OFF.get(str(x).upper(), 0) for x, _ in p['cells']], float)[None, :]
-    ctt = ct * (1 + skew[0] * np.sign(z) * ro) if skew else ct
-    zt = np.sign(z) * (c * np.minimum(a, 1) + ctt * np.maximum(a - 1, 0))
+    m = (1 + skew[0] * np.sign(z) * ro) if skew else 1.0
+    ct2 = ct if ct2 is None else ct2
+    zt = np.sign(z) * (c * np.minimum(a, 1) + ct * m * np.clip(a - 1, 0, 1) + ct2 * m * np.maximum(a - 2, 0))
     if vol:
-        zt = zt * vol_ratio(p)[None, :]
+        zt = zt * vol_ratio(p, beta)[None, :]
     if skew:
         zt = zt + skew[1] * ro
     center = p['anchor'] + k * p['drift']
