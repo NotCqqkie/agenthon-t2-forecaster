@@ -132,3 +132,17 @@ def parse_adjust(reply, assets):
         w = w if w == w and 0 < w < 1e6 else 1.0
         out[a] = (max(-1.0, min(1.0, d)), max(0.6, min(1.8, w)), str(r.get('why', ''))[:300])
     return out
+
+
+def build_prompt_event(asof, ttype, assets, horizons, stats, docs, context):
+    L = ['You read dated central-bank and market documents and judge uncertainty for a statistical forecast.',
+         f'As-of: {asof}. Use only these documents; do not use any knowledge of what happened later.',
+         f'Forecast horizon: up to {max(horizons)} business days. Assets: {", ".join(assets)}.',
+         '', f'Documents ({len(docs)}), newest first:']
+    for d in docs:
+        L += [f'--- {d["doc_id"]} ({d["ts"]}, {d["kind"]}) ---', d['text'], '']
+    L += ['Question: within the horizon, how likely is a large, abrupt move in these assets, judging ONLY from the documents',
+          '(scheduled policy decisions or votes, explicit stress/crisis language, pegs or regimes under strain, sharp',
+          'policy pivots signalled)? Answer one of: "low", "normal", "elevated", "high".',
+          'Reply with JSON only: {"risk": "<low|normal|elevated|high>", "why": "<short, cite doc ids>"}']
+    return '\n'.join(L)

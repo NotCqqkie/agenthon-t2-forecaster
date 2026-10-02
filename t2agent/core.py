@@ -6,7 +6,7 @@ N_DRAWS = 500
 WINDOW = 300
 PARAMS = dict(k=0.5, c=0.7, ct=1.2)
 FAMILY_PARAMS = {'F1': dict(k=0.75, c=0.5, ct=1.0), 'F2': dict(k=0.5, c=1.0, ct=1.3),
-                 'F3': dict(k=0.25, c=0.9, ct=1.3), 'F4': dict(k=0.75, c=1.6, ct=1.7)}
+                 'F3': dict(k=0.375, c=0.9, ct=1.3), 'F4': dict(k=0.75, c=1.6, ct=1.7)}
 VOL_BETA, VOL_CLIP = 0.25, (0.7, 1.4)
 RISK_OFF = {'MKT': -1, 'SMB': -1, 'QMJ': 1, 'AUD': -1, 'NZD': -1, 'EUR': -1, 'GBP': -1, 'CAD': 1, 'NOK': 1,
             'SEK': 1, 'DKK': 1, 'JPY': -1, 'CHF': -1}

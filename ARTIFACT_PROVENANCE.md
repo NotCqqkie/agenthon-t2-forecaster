@@ -25,7 +25,7 @@ Per unit, using only that unit's own `/input` files:
 |---|---|---|
 | k, c, ct for F1 | 0.75, 0.5, 1.0 | backtests below |
 | k, c, ct for F2 | 0.5, 1.0, 1.3 | backtests below |
-| k, c, ct for F3 | 0.25, 0.9, 1.3 | backtests below |
+| k, c, ct for F3 | 0.375, 0.9, 1.3 | backtests below |
 | k, c, ct for F4 | 0.75, 1.6, 1.7 | backtests below |
 | vol exponent / clip | 0.25 / [0.7, 1.4] | backtests below |
 | F4 risk-off tail asymmetry / centre shift | 0.3 / 0.25 sd | backtests below |
