@@ -13,7 +13,8 @@ def rationale(unit_id, asof, p, prm, n_docs, note):
              'assets aligned by date, cross-horizon path covariance min(s, s\') * Sigma.',
              f'2. Drift: the trailing-window mean step is shrunk by k = {prm["k"]} (trend extrapolation is noisy).',
              f'3. Shape: standardized draws are reshaped piecewise-linearly, slope {prm["c"]} inside one sd and '
-             f'{prm["ct"]} beyond it (h-day financial changes are leptokurtic: peaked body, fat tails).',
+             f'{prm["ct"]} beyond it (h-day financial changes are leptokurtic: peaked body, fat tails)'
+             + ('; width scaled by (20-day vol / 300-day vol)^0.25.' if prm.get('vol') else '.'),
              '4. Parameters were chosen on pre-as-of historical backtests only; no unit-specific values are stored.',
              '', '## Ledger', '', '| asset | horizon | anchor | drift used | panel steps |', '|---|---|---|---|---|']
     if p is not None:

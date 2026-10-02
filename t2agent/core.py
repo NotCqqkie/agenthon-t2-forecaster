@@ -4,7 +4,10 @@ import pandas as pd
 
 N_DRAWS = 500
 WINDOW = 300
-PARAMS = dict(k=0.5, c=0.65, ct=1.2)
+PARAMS = dict(k=0.5, c=0.7, ct=1.2)
+FAMILY_PARAMS = {'F1': dict(k=0.5, c=0.6, ct=1.0), 'F2': dict(k=0.5, c=0.7, ct=1.2),
+                 'F3': dict(k=0.5, c=0.8, ct=1.0), 'F4': dict(k=0.75, c=0.7, ct=1.2)}
+VOL_BETA, VOL_CLIP = 0.25, (0.7, 1.4)
 
 
 def find_card(panels_dir):
@@ -121,13 +124,26 @@ def m0_parts(card, spec, panels, asof, unit_id):
                 mu=mu, Sig=Sig, assets=assets, n_rows=len(frame), hist=hist)
 
 
-def transform(p, k, c, ct):
+def vol_ratio(p):
+    out = []
+    for a, _ in p['cells']:
+        s = p['hist'][a].to_numpy()
+        st = np.diff(s) if p['ttype'] == 'level' else s
+        st = st[np.isfinite(st)]
+        v20, v300 = (st[-20:].std(), st[-300:].std()) if len(st) >= 40 else (1.0, 1.0)
+        out.append(v20 / v300 if v300 > 0 and np.isfinite(v20 / v300) else 1.0)
+    return np.clip(np.array(out) ** VOL_BETA, *VOL_CLIP)
+
+
+def transform(p, k, c, ct, vol=False):
     base = p['base']
     sd = base.std(0, keepdims=True)
     sd = np.where(sd > 0, sd, 1.0)
     z = base / sd
     a = np.abs(z)
     zt = np.sign(z) * (c * np.minimum(a, 1) + ct * np.maximum(a - 1, 0))
+    if vol:
+        zt = zt * vol_ratio(p)[None, :]
     X = p['anchor'] + k * p['drift'] + sd * zt
     if X.shape[1] == 2:
         m0 = p['anchor'] + p['drift'] + base
@@ -136,9 +152,10 @@ def transform(p, k, c, ct):
 
 
 def params_for(card, panels_used):
-    if any('macro' in n for n in panels_used):
+    if any('macro' in n or 'em_' in n or 'transfer' in n for n in panels_used):
         return dict(k=1.0, c=1.0, ct=1.0)
-    return dict(PARAMS)
+    fam = str(card.get('metadata', {}).get('category', ''))[-2:]
+    return dict(FAMILY_PARAMS.get(fam, PARAMS), vol=True)
 
 
 def forecast(card, spec, panels, asof, unit_id):
