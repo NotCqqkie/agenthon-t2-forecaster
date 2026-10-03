@@ -66,3 +66,14 @@ standardized 500/750-step UST_10Y change and pooled rates-panel volatility ratio
 rates panel up to the as-of date), and a soft lower bound for yield levels. Selected by greedy forward selection on the
 synthetic dev sets (both eras required to improve; real practice cards not worse by more than 0.003), then confirmed on
 two separate held-out synthetic sets drawn at different random as-of dates.
+
+## v10 additions (2026-10-02)
+
+Module `t2agent/v10.py` (constants `P`, `CFG`). Beyond v9: the Treasury reversal and its tail terms are switched off
+smoothly when the 2-year yield is near zero AND the 10Y-2Y curve is steep (weight from UST_2Y and UST_10Y levels in the
+unit's rates panel at the as-of date; zero whenever the 2Y yield is above 1.75% or the slope is 1.2 or less); a
+tenor gradient on how much of the baseline drift is extrapolated for Treasury cells (F2, F3); the reversal signal split
+into a curve-slope part (horizon-scaled) and a residual for multi-tenor cards (F3); a drift-significance width/tail
+rule (F2, F3); a volatility-managed centre for equity-factor cells (F1, F4); a drift cap for G10 FX cells (F1); and F4
+tail slope 1.5 / vol exponent 0.4375. Selected by greedy forward selection on the dev sets with era and 4-year-block
+requirements, then confirmed on a further, previously unused held-out synthetic set.

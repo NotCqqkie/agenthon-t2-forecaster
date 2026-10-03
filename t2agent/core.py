@@ -1,5 +1,6 @@
 import json, pathlib, tomllib, zlib
 from . import v9 as V9
+from . import v10 as V10
 import numpy as np
 import pandas as pd
 
@@ -295,9 +296,15 @@ def v9_card(p, fam, panels, asof):
     R = None
     if rates:
         R = pd.concat(rates).drop_duplicates(['date', 'asset'], keep='first').pivot(index='date', columns='asset', values='value').sort_index()
+    cache = dict(p['hist'])
+
+    def H(a):
+        if a not in cache:
+            cache[a] = history(panels, a, asof)
+        return cache[a]
     return dict(fam=fam, ttype=p['ttype'], asof=asof, cells=[(str(a), int(h)) for a, h in p['cells']],
                 anchor=np.asarray(p['anchor'], float), drift=np.asarray(p['drift'], float), base=p['base'],
-                hs=np.array([h for _, h in p['cells']], float), feat=feats, H=p['hist'], rates=R)
+                hs=np.array([h for _, h in p['cells']], float), feat=feats, H=cache, Hf=H, rates=R)
 
 
 def forecast(card, spec, panels, asof, unit_id):
@@ -309,9 +316,10 @@ def forecast(card, spec, panels, asof, unit_id):
                 used.add(name)
                 break
     prm = params_for(card, used)
-    if 'fam' in prm and prm['fam'] in V9.P:
-        prm = dict(prm, version='v9')
-        X = V9.transform_card(v9_card(p, prm['fam'], panels, asof))
+    if 'fam' in prm and prm['fam'] in V10.P:
+        prm = dict(prm, version='v10')
+        c = v9_card(p, prm['fam'], panels, asof)
+        X = V10.transform_card(dict(c, H=c['Hf']))
     else:
         X = transform_v8(p, **prm) if 'fam' in prm else transform(p, **prm)
     if not np.isfinite(X).all():
